@@ -1,70 +1,63 @@
-// GANTI DENGAN URL WEB APP HASIL DEPLOY ULANG ANDA
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbzpAY8xsM8XjZbVc8BhJhtLNHQuR-z9GpY_7FiOm_EZK1Y91vmkdAI7pNxiA64omrmx/exec";
+// GANTI DENGAN URL WEB APP ANDA
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxnbtSKY6tKzhHy9wHgRK6oiHir8ExT445uG6d9fqKGXpT4akUbgZIukye3pu_oTkAR/exec";
 
-// Inisialisasi Icon Lucide
 const initIcons = () => lucide.createIcons();
 
-// Fungsi Mengambil Data dari Spreadsheet
 async function loadData() {
     const container = document.getElementById('app-container');
     const loader = document.getElementById('loader');
     
-    loader.classList.remove('hidden');
-    
     try {
-        const response = await fetch(`${SHEET_URL}?t=${new Date().getTime()}`);
-        const data = await response.json();
+        const res = await fetch(`${SHEET_URL}?t=${new Date().getTime()}`);
+        const data = await res.json();
         
         loader.classList.add('hidden');
         container.innerHTML = "";
 
         if (!data || data.length === 0) {
-            container.innerHTML = "<p class='col-span-full text-center py-10 text-slate-400'>Belum ada riwayat servis.</p>";
+            container.innerHTML = "<p class='col-span-full text-center py-10'>Belum ada riwayat servis.</p>";
             return;
         }
 
-        // Urutkan dari yang terbaru
-        data.reverse().forEach((item, index) => {
-            const biayaFormat = new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                maximumFractionDigits: 0
-            }).format(item.Biaya || 0);
-
-            const card = document.createElement('div');
-            card.className = "service-card p-5 rounded-2xl border border-slate-200 shadow-sm card-animate";
-            card.style.animationDelay = `${index * 0.05}s`;
-
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-bold text-slate-800">${item['Nama Pelanggan'] || 'Umum'}</h3>
-                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold">${item.Tanggal || ''}</span>
-                </div>
-                <p class="text-xs font-bold text-blue-600 mb-3 bg-blue-50 inline-block px-2 py-0.5 rounded">${item['Jenis Motor'] || '-'}</p>
-                <div class="space-y-1.5 mb-4">
-                    <p class="text-sm text-slate-600 flex gap-2"><i data-lucide="alert-circle" class="w-4 h-4 text-orange-400"></i> ${item.Keluhan || '-'}</p>
-                    <p class="text-sm text-slate-600 flex gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> ${item.Tindakan || '-'}</p>
-                </div>
-                <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
-                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Biaya</span>
-                    <span class="font-black text-blue-700 text-lg">${biayaFormat}</span>
+        data.reverse().forEach((item) => {
+            const biaya = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.Biaya || 0);
+            
+            const card = `
+                <div class="card-service shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-lg uppercase tracking-tight">${item['Nama Pelanggan']}</h3>
+                            <span class="text-blue-600 font-bold text-sm">${item['Jenis Motor']}</span>
+                        </div>
+                        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold">${item.Tanggal || '-'}</span>
+                    </div>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex gap-2 text-sm">
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-orange-500"></i>
+                            <p><b>Keluhan:</b> ${item.Keluhan}</p>
+                        </div>
+                        <div class="flex gap-2 text-sm">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                            <p><b>Tindakan:</b> ${item.Tindakan}</p>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-dashed flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Biaya</span>
+                        <span class="text-2xl font-black text-blue-700">${biaya}</span>
+                    </div>
                 </div>
             `;
-            container.appendChild(card);
+            container.innerHTML += card;
         });
         initIcons();
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        loader.innerHTML = "<p class='text-red-500 text-sm'>Gagal memuat data. Periksa koneksi atau URL Apps Script.</p>";
+    } catch (e) {
+        loader.innerHTML = "Gagal memuat data.";
     }
 }
 
-// Fungsi Mengirim Data ke Spreadsheet
 document.getElementById('service-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-simpan');
-    const originalText = btn.innerHTML;
-    
     btn.disabled = true;
     btn.innerHTML = "Menyimpan...";
 
@@ -78,33 +71,17 @@ document.getElementById('service-form').addEventListener('submit', async (e) => 
     };
 
     try {
-        // Menggunakan fetch POST
-        await fetch(SHEET_URL, {
-            method: 'POST',
-            mode: 'no-cors', // Penting untuk Google Apps Script
-            body: JSON.stringify(payload)
-        });
-
-        alert("Data Berhasil Disimpan!");
+        await fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("✅ Berhasil disimpan!");
         document.getElementById('service-form').reset();
-        
-        // Reload data setelah jeda singkat agar Spreadsheet sempat memproses
         setTimeout(loadData, 1500);
-    } catch (error) {
-        console.error("Save Error:", error);
-        alert("Gagal menyimpan data ke server.");
+    } catch (err) {
+        alert("Gagal menyimpan.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = originalText;
+        btn.innerHTML = '<i data-lucide="save"></i> Simpan Data';
         initIcons();
     }
 });
 
-// Event Listener tombol refresh
-document.getElementById('refresh-btn').addEventListener('click', loadData);
-
-// Jalankan saat halaman pertama kali dibuka
-window.addEventListener('DOMContentLoaded', () => {
-    loadData();
-    initIcons();
-});
+window.onload = () => { loadData(); initIcons(); };
